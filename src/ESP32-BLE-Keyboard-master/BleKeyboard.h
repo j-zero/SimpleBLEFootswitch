@@ -1,18 +1,23 @@
 // uncomment the following line to use NimBLE library
-//#define USE_NIMBLE
+#define USE_NIMBLE
 
 #ifndef ESP32_BLE_KEYBOARD_H
 #define ESP32_BLE_KEYBOARD_H
 #include "sdkconfig.h"
+
 #if defined(CONFIG_BT_ENABLED)
 
-#if defined(USE_NIMBLE)
+#if !defined(USE_NIMBLE)
+  #error "Only NimBLE library is supported in this version. Please define USE_NIMBLE to use NimBLE."
+#endif
 
 #include "NimBLECharacteristic.h"
 #include "NimBLEHIDDevice.h"
-#include "NimBLEAdvertising.h"
 #include "NimBLEServer.h"
+#include "NimBLEDevice.h"
+#include "NimBLEAdvertising.h"
 
+/* 
 #define BLEDevice                  NimBLEDevice
 #define BLEServerCallbacks         NimBLEServerCallbacks
 #define BLECharacteristicCallbacks NimBLECharacteristicCallbacks
@@ -20,13 +25,7 @@
 #define BLECharacteristic          NimBLECharacteristic
 #define BLEAdvertising             NimBLEAdvertising
 #define BLEServer                  NimBLEServer
-
-#else
-
-#include "BLEHIDDevice.h"
-#include "BLECharacteristic.h"
-
-#endif // USE_NIMBLE
+ */
 
 #include "Print.h"
 
@@ -49,6 +48,7 @@ const uint8_t KEY_DOWN_ARROW = 0xD9;
 const uint8_t KEY_LEFT_ARROW = 0xD8;
 const uint8_t KEY_RIGHT_ARROW = 0xD7;
 const uint8_t KEY_BACKSPACE = 0xB2;
+const uint8_t KEY_SPACE = 0x20; // Keyboard Spacebar
 const uint8_t KEY_TAB = 0xB3;
 const uint8_t KEY_RETURN = 0xB0;
 const uint8_t KEY_ESC = 0xB1;
@@ -130,14 +130,14 @@ typedef struct
   uint8_t keys[6];
 } KeyReport;
 
-class BleKeyboard : public Print, public BLEServerCallbacks, public BLECharacteristicCallbacks
+class BleKeyboard : public Print, public NimBLEServerCallbacks, public NimBLECharacteristicCallbacks
 {
 private:
-  BLEHIDDevice* hid;
-  BLECharacteristic* inputKeyboard;
-  BLECharacteristic* outputKeyboard;
-  BLECharacteristic* inputMediaKeys;
-  BLEAdvertising*    advertising;
+  NimBLEHIDDevice* hid;
+  NimBLECharacteristic* inputKeyboard;
+  NimBLECharacteristic* outputKeyboard;
+  NimBLECharacteristic* inputMediaKeys;
+  NimBLEAdvertising*    advertising;
   KeyReport          _keyReport;
   MediaKeyReport     _mediaKeyReport;
   std::string        deviceName;
@@ -152,7 +152,7 @@ private:
   uint16_t version   = 0x0210;
 
 public:
-  BleKeyboard(std::string deviceName = "BLE Footswitch", std::string deviceManufacturer = "datenpir.at ", uint8_t batteryLevel = 100);
+  BleKeyboard(std::string deviceName = "ESP32 Keyboard", std::string deviceManufacturer = "Espressif", uint8_t batteryLevel = 100);
   void begin(void);
   void end(void);
   void sendReport(KeyReport* keys);
@@ -174,11 +174,14 @@ public:
   void set_product_id(uint16_t pid);
   void set_version(uint16_t version);
 protected:
-  virtual void onStarted(BLEServer *pServer) { };
-  virtual void onConnect(BLEServer* pServer, NimBLEConnInfo & connInfo) override;
-  virtual void onDisconnect(BLEServer* pServer, NimBLEConnInfo & connInfo, int reason) override;
-  virtual void onWrite(BLECharacteristic* me, NimBLEConnInfo & connInfo) override;
+  virtual void onStarted(NimBLEServer *pServer) { };
 
+  // NimBLEServerCallbacks
+  virtual void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override;
+  virtual void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override;
+
+  // NimBLECharacteristicCallbacks
+  virtual void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override;
 };
 
 #endif // CONFIG_BT_ENABLED
