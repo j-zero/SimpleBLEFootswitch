@@ -1,12 +1,12 @@
 #include <Arduino.h>
-#include "src/ESP32-BLE-MIDI/src/BLEMidi.h"
+#include "src/BLE-MIDI/src/BLEMidi.h"
 
 void setup() {
   Serial.begin(115200);
   Serial.println("Initializing bluetooth");
-  BLEMidiServer.begin("Basic MIDI device");
+  BLEMidiServer.begin("FooBLE");
   Serial.println("Waiting for connections...");
-  //BLEMidiServer.enableDebugging();  // Uncomment if you want to see some debugging output from the library (not much for the server class...)
+  BLEMidiServer.enableDebugging();  // Uncomment if you want to see some debugging output from the library (not much for the server class...)
 }
 
 void loop() {
